@@ -2,8 +2,12 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/MyCodeMyWork-VrGlobe.iml" filepath="$PROJECT_DIR$/MyCodeMyWork-VrGlobe.iml" />
       <module fileurl="file://$PROJECT_DIR$/VrGlobe.iml" filepath="$PROJECT_DIR$/VrGlobe.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/VrGlobe-app.iml" filepath="$PROJECT_DIR$/app/VrGlobe-app.iml" group="VrGlobe/app" />
+      <module fileurl="file://$PROJECT_DIR$/airhockey/airhockey.iml" filepath="$PROJECT_DIR$/airhockey/airhockey.iml" group="VrGlobe/airhockey" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fengbo-MyCodeMyWork-VrGlobe.iml" filepath="$PROJECT_DIR$/fengbo-MyCodeMyWork-VrGlobe.iml" group="VrGlobe" />
     </modules>
   </component>
 </project>
