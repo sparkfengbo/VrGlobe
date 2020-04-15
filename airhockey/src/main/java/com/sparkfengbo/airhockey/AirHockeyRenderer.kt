@@ -4,10 +4,11 @@ import android.content.Context
 import android.opengl.GLES20.*
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix.*
-import com.sparkfengbo.airhockey.util.LoggerConfig
-import com.sparkfengbo.airhockey.util.MatrixHelper
-import com.sparkfengbo.airhockey.util.ShaderHelper
-import com.sparkfengbo.airhockey.util.TextResourceReader
+import com.sparkfengbo.airhockey.objects.Mallet
+import com.sparkfengbo.airhockey.objects.Table
+import com.sparkfengbo.airhockey.program.ColorShaderProgram
+import com.sparkfengbo.airhockey.program.TextureShaderProgram
+import com.sparkfengbo.airhockey.util.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -41,6 +42,12 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
     private var uMatrixLocation = 0
     private var projectionMatrix = FloatArray(16)
     private val modelMatrix = FloatArray(16)
+
+    private var table: Table? = null
+    private var mallet: Mallet? = null
+    private var textureProgram: TextureShaderProgram? = null
+    private var colorProgram: ColorShaderProgram? = null
+    private var texture = 0
 
     init {
         var tableVertices: FloatArray = floatArrayOf(
@@ -107,22 +114,38 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
 
 
     override fun onDrawFrame(gl: GL10?) {
+
+        // Clear the rendering surface.
         glClear(GL_COLOR_BUFFER_BIT)
+        // Draw the table.
+        textureProgram?.useProgram();
+        textureProgram?.setUniforms(projectionMatrix, texture)
+        table?.bindData(textureProgram);
+        table?.draw();
 
-        glUniformMatrix4fv(uMatrixLocation, 1, false, projectionMatrix, 0);
+        // Draw the mallets.
+        colorProgram?.useProgram()
+        colorProgram?.setUniforms(projectionMatrix)
 
-        glUniform4f(uColorLocation, 1.0f, 1.0f, 1.0f, 1.0f)
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 6)
+        mallet?.bindData(colorProgram)
+        mallet?.draw();
 
-        glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f)
-        glDrawArrays(GL_LINES, 6, 2)
-
-        // Draw the first mallet blue.
-        glUniform4f(uColorLocation, 0.0f, 0.0f, 1.0f, 1.0f)
-        glDrawArrays(GL_POINTS, 8, 1)
-        // Draw the second mallet red.
-        glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f)
-        glDrawArrays(GL_POINTS, 9, 1)
+//        glClear(GL_COLOR_BUFFER_BIT)
+//
+//        glUniformMatrix4fv(uMatrixLocation, 1, false, projectionMatrix, 0);
+//
+//        glUniform4f(uColorLocation, 1.0f, 1.0f, 1.0f, 1.0f)
+//        glDrawArrays(GL_TRIANGLE_FAN, 0, 6)
+//
+//        glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f)
+//        glDrawArrays(GL_LINES, 6, 2)
+//
+//        // Draw the first mallet blue.
+//        glUniform4f(uColorLocation, 0.0f, 0.0f, 1.0f, 1.0f)
+//        glDrawArrays(GL_POINTS, 8, 1)
+//        // Draw the second mallet red.
+//        glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f)
+//        glDrawArrays(GL_POINTS, 9, 1)
 
     }
 
@@ -167,36 +190,44 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
-//        glClearColor(1.0f, 0.0f, 0.0f, 0.0f)
-        val vertexShaderSource = TextResourceReader.readTextFileFromResource(context, R.raw.vertex_shader)
-        val fragmentShaderSource = TextResourceReader.readTextFileFromResource(context, R.raw.fragment_shader)
 
-        var vertexShader = ShaderHelper.compileVertexShader(vertexShaderSource)
-        var fragmentShader = ShaderHelper.compileFragmentShader(fragmentShaderSource)
-
-        program = ShaderHelper.linkProgram(vertexShader, fragmentShader)
-
-        if (LoggerConfig.ON) {
-            ShaderHelper.validateProgram(program)
-        }
-        glUseProgram(program)
-
-        aColorLocation = glGetAttribLocation(program, A_COLOR)
-//        uColorLocation = glGetUniformLocation(program, U_COLOR)
-        aPositionLocation = glGetAttribLocation(program, A_POSITION)
-
-        vertexData.position(0)
-        glVertexAttribPointer(aPositionLocation, POSITION_COMPONENT_COUNT, GL_FLOAT,
-                false, STRIDE, vertexData)
-        glEnableVertexAttribArray(aPositionLocation)
-
-        vertexData.position(POSITION_COMPONENT_COUNT)
-        glVertexAttribPointer(aColorLocation, COLOR_COMPONENT_COUNT, GL_FLOAT,
-                false, STRIDE, vertexData)
-
-        glEnableVertexAttribArray(aColorLocation)
+        table = Table()
+        mallet = Mallet()
+        textureProgram = TextureShaderProgram(context)
+        colorProgram = ColorShaderProgram(context)
+        texture = TextureHelper.loadTexture(context, R.drawable.air_hockey_surface)
 
 
-        uMatrixLocation = glGetUniformLocation(program, U_MATRIX);
+////        glClearColor(1.0f, 0.0f, 0.0f, 0.0f)
+//        val vertexShaderSource = TextResourceReader.readTextFileFromResource(context, R.raw.vertex_shader)
+//        val fragmentShaderSource = TextResourceReader.readTextFileFromResource(context, R.raw.fragment_shader)
+//
+//        var vertexShader = ShaderHelper.compileVertexShader(vertexShaderSource)
+//        var fragmentShader = ShaderHelper.compileFragmentShader(fragmentShaderSource)
+//
+//        program = ShaderHelper.linkProgram(vertexShader, fragmentShader)
+//
+//        if (LoggerConfig.ON) {
+//            ShaderHelper.validateProgram(program)
+//        }
+//        glUseProgram(program)
+//
+//        aColorLocation = glGetAttribLocation(program, A_COLOR)
+////        uColorLocation = glGetUniformLocation(program, U_COLOR)
+//        aPositionLocation = glGetAttribLocation(program, A_POSITION)
+//
+//        vertexData.position(0)
+//        glVertexAttribPointer(aPositionLocation, POSITION_COMPONENT_COUNT, GL_FLOAT,
+//                false, STRIDE, vertexData)
+//        glEnableVertexAttribArray(aPositionLocation)
+//
+//        vertexData.position(POSITION_COMPONENT_COUNT)
+//        glVertexAttribPointer(aColorLocation, COLOR_COMPONENT_COUNT, GL_FLOAT,
+//                false, STRIDE, vertexData)
+//
+//        glEnableVertexAttribArray(aColorLocation)
+//
+//
+//        uMatrixLocation = glGetUniformLocation(program, U_MATRIX);
     }
 }

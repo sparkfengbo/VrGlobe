@@ -125,6 +125,7 @@ public class ShaderHelper {
         // Return the program object ID.
         return programObjectId;
     }
+
     /**
      * Validates an OpenGL program. Should only be called when developing the
      * application.
@@ -140,5 +141,16 @@ public class ShaderHelper {
         return validateStatus[0] != 0;
     }
 
-
+    public static int buildProgram(String vertexShaderSource, String fragmentShaderSource) {
+        int program;
+        // Compile the shaders.
+        int vertexShader = compileVertexShader(vertexShaderSource);
+        int fragmentShader = compileFragmentShader(fragmentShaderSource);
+        // Link them into a shader program.
+        program = linkProgram(vertexShader, fragmentShader);
+        if (LoggerConfig.ON) {
+            validateProgram(program);
+        }
+        return program;
+    }
 }
