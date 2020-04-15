@@ -44,14 +44,13 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
          * 比较好区分 三角形的朝向
          */
         var tableVerticesWithTriangles: FloatArray = floatArrayOf(
-                // Triangle 1
-                -0.5f, -0.5f,
-                0.5f, 0.5f,
-                -0.5f, 0.5f,
-                // Triangle 2
+                // Triangle Fan
+                0f, 0f,
                 -0.5f, -0.5f,
                 0.5f, -0.5f,
                 0.5f, 0.5f,
+                -0.5f, 0.5f,
+                -0.5f, -0.5f,
                 // Line 1
                 -0.5f, 0f, 0.5f, 0f,
                 // Mallets
@@ -79,7 +78,7 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
         glClear(GL_COLOR_BUFFER_BIT)
 
         glUniform4f(uColorLocation, 1.0f, 1.0f, 1.0f, 1.0f)
-        glDrawArrays(GL_TRIANGLES, 0, 6)
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 6);
 
         glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f);
         glDrawArrays(GL_LINES, 6, 2);
