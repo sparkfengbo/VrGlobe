@@ -1,3 +1,4 @@
+uniform mat4 u_Matrix;
 
 //A vec4 is a vector consisting of four components
 attribute vec4 a_Position;
@@ -9,7 +10,7 @@ void main()
 {
     v_Color = a_Color;
 
-    gl_Position = a_Position;
+    gl_Position = u_Matrix * a_Position;
     gl_PointSize = 10.0;
 }
 

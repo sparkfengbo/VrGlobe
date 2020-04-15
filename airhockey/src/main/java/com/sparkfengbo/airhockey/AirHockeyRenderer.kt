@@ -3,6 +3,7 @@ package com.sparkfengbo.airhockey
 import android.content.Context
 import android.opengl.GLES20.*
 import android.opengl.GLSurfaceView
+import android.opengl.Matrix.orthoM
 import com.sparkfengbo.airhockey.util.LoggerConfig
 import com.sparkfengbo.airhockey.util.ShaderHelper
 import com.sparkfengbo.airhockey.util.TextResourceReader
@@ -11,6 +12,7 @@ import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+
 
 /**
  * http://media.pragprog.com/titles/kbogla/code/AirHockey1/src/com/airhockey/android/AirHockeyRenderer.java
@@ -23,6 +25,7 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
         var U_COLOR = "u_Color"
         var A_POSITION = "a_Position"
         var A_COLOR = "a_Color"
+        var U_MATRIX = "u_Matrix";
         var COLOR_COMPONENT_COUNT = 3
         var STRIDE = (POSITION_COMPONENT_COUNT + COLOR_COMPONENT_COUNT) * BYTES_PER_FLOAT 
     }
@@ -33,7 +36,8 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
     private var uColorLocation = 0
     private var aPositionLocation = 0
     private var aColorLocation = 0
-
+    private var uMatrixLocation = 0
+    private var projectionMatrix = FloatArray(16)
 
     init {
         var tableVertices: FloatArray = floatArrayOf(
@@ -49,21 +53,21 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
          */
         var tableVerticesWithTriangles: FloatArray = floatArrayOf(
                 // Order of coordinates: X, Y, R, G, B
-
                 // Triangle Fan
                 0f, 0f, 1f, 1f, 1f,
-                -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
-                0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
-                0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
-                -0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
-                -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
+                -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
+                0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
+                0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
+                -0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
+                -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
 
                 // Line 1
                 -0.5f, 0f, 1f, 0f, 0f,
                 0.5f, 0f, 1f, 0f, 0f,
+
                 // Mallets
-                0f, -0.25f, 0f, 0f, 1f,
-                0f, 0.25f, 1f, 0f, 0f
+                0f, -0.4f, 0f, 0f, 1f,
+                0f, 0.4f, 1f, 0f, 0f
         )
 
 
@@ -77,13 +81,13 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer()
         vertexData.put(tableVerticesWithTriangles)
-
-
     }
 
 
     override fun onDrawFrame(gl: GL10?) {
         glClear(GL_COLOR_BUFFER_BIT)
+
+        glUniformMatrix4fv(uMatrixLocation, 1, false, projectionMatrix, 0);
 
         glUniform4f(uColorLocation, 1.0f, 1.0f, 1.0f, 1.0f)
         glDrawArrays(GL_TRIANGLE_FAN, 0, 6) 
@@ -102,6 +106,19 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         glViewport(0, 0, width, height)
+
+        val aspectRatio =
+                if (width > height)
+                        width.toFloat() / height.toFloat()
+                else
+                        height.toFloat() / width.toFloat()
+
+        if (width > height) { // Landscape
+            orthoM(projectionMatrix, 0, -aspectRatio, aspectRatio, -1f, 1f, -1f, 1f)
+        } else { // Portrait or square
+            orthoM(projectionMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio, -1f, 1f)
+        }
+
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
@@ -134,5 +151,8 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
                 false, STRIDE, vertexData)
 
         glEnableVertexAttribArray(aColorLocation)
+
+
+        uMatrixLocation = glGetUniformLocation(program, U_MATRIX);
     }
 }
