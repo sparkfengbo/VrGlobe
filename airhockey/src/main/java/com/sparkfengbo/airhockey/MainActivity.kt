@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
 
         if (supportEs2) {
             glSurfaceView.setEGLContextClientVersion(2)
-            glSurfaceView.setRenderer(AirHockeyRenderer())
+            glSurfaceView.setRenderer(AirHockeyRenderer(baseContext))
             rendererSet = true
         } else {
             Toast.makeText(this, "不支持OpenGL ES2", Toast.LENGTH_LONG).show()
