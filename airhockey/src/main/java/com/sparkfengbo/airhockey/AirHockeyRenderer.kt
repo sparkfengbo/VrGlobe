@@ -3,8 +3,9 @@ package com.sparkfengbo.airhockey
 import android.content.Context
 import android.opengl.GLES20.*
 import android.opengl.GLSurfaceView
-import android.opengl.Matrix.orthoM
+import android.opengl.Matrix.*
 import com.sparkfengbo.airhockey.util.LoggerConfig
+import com.sparkfengbo.airhockey.util.MatrixHelper
 import com.sparkfengbo.airhockey.util.ShaderHelper
 import com.sparkfengbo.airhockey.util.TextResourceReader
 import java.nio.ByteBuffer
@@ -20,14 +21,15 @@ import javax.microedition.khronos.opengles.GL10
 class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
 
     companion object {
-        var POSITION_COMPONENT_COUNT = 2
+        //        var POSITION_COMPONENT_COUNT = 2
+        var POSITION_COMPONENT_COUNT = 4
         var BYTES_PER_FLOAT = 4
         var U_COLOR = "u_Color"
         var A_POSITION = "a_Position"
         var A_COLOR = "a_Color"
         var U_MATRIX = "u_Matrix";
         var COLOR_COMPONENT_COUNT = 3
-        var STRIDE = (POSITION_COMPONENT_COUNT + COLOR_COMPONENT_COUNT) * BYTES_PER_FLOAT 
+        var STRIDE = (POSITION_COMPONENT_COUNT + COLOR_COMPONENT_COUNT) * BYTES_PER_FLOAT
     }
 
     private var vertexData: FloatBuffer
@@ -38,6 +40,7 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
     private var aColorLocation = 0
     private var uMatrixLocation = 0
     private var projectionMatrix = FloatArray(16)
+    private val modelMatrix = FloatArray(16)
 
     init {
         var tableVertices: FloatArray = floatArrayOf(
@@ -51,23 +54,42 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
          * 逆时针方向
          * 比较好区分 三角形的朝向
          */
+//        var tableVerticesWithTriangles: FloatArray = floatArrayOf(
+//                // Order of coordinates: X, Y, R, G, B
+//                // Triangle Fan
+//                0f, 0f, 1f, 1f, 1f,
+//                -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
+//                0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
+//                0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
+//                -0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
+//                -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
+//
+//                // Line 1
+//                -0.5f, 0f, 1f, 0f, 0f,
+//                0.5f, 0f, 1f, 0f, 0f,
+//
+//                // Mallets
+//                0f, -0.4f, 0f, 0f, 1f,
+//                0f, 0.4f, 1f, 0f, 0f
+//        )
+
         var tableVerticesWithTriangles: FloatArray = floatArrayOf(
-                // Order of coordinates: X, Y, R, G, B
+                // Order of coordinates: X, Y, Z, W, R, G, B
                 // Triangle Fan
-                0f, 0f, 1f, 1f, 1f,
-                -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
-                0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
-                0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
-                -0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
-                -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
+                0f, 0f, 0f, 1.5f, 1f, 1f, 1f,
+                -0.5f, -0.8f, 0f, 1f, 0.7f, 0.7f, 0.7f,
+                0.5f, -0.8f, 0f, 1f, 0.7f, 0.7f, 0.7f,
+                0.5f, 0.8f, 0f, 2f, 0.7f, 0.7f, 0.7f,
+                -0.5f, 0.8f, 0f, 2f, 0.7f, 0.7f, 0.7f,
+                -0.5f, -0.8f, 0f, 1f, 0.7f, 0.7f, 0.7f,
 
                 // Line 1
-                -0.5f, 0f, 1f, 0f, 0f,
-                0.5f, 0f, 1f, 0f, 0f,
+                -0.5f, 0f, 0f, 1.5f, 1f, 0f, 0f,
+                0.5f, 0f, 0f, 1.5f, 1f, 0f, 0f,
 
                 // Mallets
-                0f, -0.4f, 0f, 0f, 1f,
-                0f, 0.4f, 1f, 0f, 0f
+                0f, -0.4f, 0f, 1.25f, 0f, 0f, 1f,
+                0f, 0.4f, 0f, 1.75f, 1f, 0f, 0f
         )
 
 
@@ -90,35 +112,57 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
         glUniformMatrix4fv(uMatrixLocation, 1, false, projectionMatrix, 0);
 
         glUniform4f(uColorLocation, 1.0f, 1.0f, 1.0f, 1.0f)
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 6) 
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 6)
 
-        glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f) 
-        glDrawArrays(GL_LINES, 6, 2) 
+        glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f)
+        glDrawArrays(GL_LINES, 6, 2)
 
         // Draw the first mallet blue.
-        glUniform4f(uColorLocation, 0.0f, 0.0f, 1.0f, 1.0f) 
-        glDrawArrays(GL_POINTS, 8, 1) 
+        glUniform4f(uColorLocation, 0.0f, 0.0f, 1.0f, 1.0f)
+        glDrawArrays(GL_POINTS, 8, 1)
         // Draw the second mallet red.
-        glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f) 
-        glDrawArrays(GL_POINTS, 9, 1) 
+        glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f)
+        glDrawArrays(GL_POINTS, 9, 1)
 
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
+        // Set the OpenGL viewport to fill the entire surface.
         glViewport(0, 0, width, height)
 
-        val aspectRatio =
-                if (width > height)
-                        width.toFloat() / height.toFloat()
-                else
-                        height.toFloat() / width.toFloat()
+        /*
+        final float aspectRatio = width > height ?
+            (float) width / (float) height :
+            (float) height / (float) width;
 
-        if (width > height) { // Landscape
-            orthoM(projectionMatrix, 0, -aspectRatio, aspectRatio, -1f, 1f, -1f, 1f)
-        } else { // Portrait or square
-            orthoM(projectionMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio, -1f, 1f)
+        if (width > height) {
+            // Landscape
+            orthoM(projectionMatrix, 0,
+                -aspectRatio, aspectRatio,
+                -1f, 1f,
+                -1f, 1f);
+        } else {
+            // Portrait or square
+            orthoM(projectionMatrix, 0,
+                -1f, 1f,
+                -aspectRatio, aspectRatio,
+                -1f, 1f);
         }
+        */
+        MatrixHelper.perspectiveM(projectionMatrix, 45f, width.toFloat()
+                / height.toFloat(), 1f, 10f)
 
+        /*
+        setIdentityM(modelMatrix, 0);
+        translateM(modelMatrix, 0, 0f, 0f, -2f);
+        */
+        setIdentityM(modelMatrix, 0)
+        translateM(modelMatrix, 0, 0f, 0f, -2.5f)
+        rotateM(modelMatrix, 0, -60f, 1f, 0f, 0f)
+
+        val temp = FloatArray(16)
+        multiplyMM(temp, 0, projectionMatrix, 0, modelMatrix, 0)
+        System.arraycopy(temp, 0, projectionMatrix, 0, temp.size)
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
