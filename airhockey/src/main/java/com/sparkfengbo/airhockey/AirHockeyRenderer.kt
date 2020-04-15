@@ -22,6 +22,9 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
         var BYTES_PER_FLOAT = 4
         var U_COLOR = "u_Color"
         var A_POSITION = "a_Position"
+        var A_COLOR = "a_Color"
+        var COLOR_COMPONENT_COUNT = 3
+        var STRIDE = (POSITION_COMPONENT_COUNT + COLOR_COMPONENT_COUNT) * BYTES_PER_FLOAT 
     }
 
     private var vertexData: FloatBuffer
@@ -29,6 +32,7 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
     private var program = 0
     private var uColorLocation = 0
     private var aPositionLocation = 0
+    private var aColorLocation = 0
 
 
     init {
@@ -44,18 +48,22 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
          * 比较好区分 三角形的朝向
          */
         var tableVerticesWithTriangles: FloatArray = floatArrayOf(
+                // Order of coordinates: X, Y, R, G, B
+
                 // Triangle Fan
-                0f, 0f,
-                -0.5f, -0.5f,
-                0.5f, -0.5f,
-                0.5f, 0.5f,
-                -0.5f, 0.5f,
-                -0.5f, -0.5f,
+                0f, 0f, 1f, 1f, 1f,
+                -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
+                0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
+                0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
+                -0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
+                -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
+
                 // Line 1
-                -0.5f, 0f, 0.5f, 0f,
+                -0.5f, 0f, 1f, 0f, 0f,
+                0.5f, 0f, 1f, 0f, 0f,
                 // Mallets
-                0f, -0.25f,
-                0f, 0.25f
+                0f, -0.25f, 0f, 0f, 1f,
+                0f, 0.25f, 1f, 0f, 0f
         )
 
 
@@ -78,17 +86,17 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
         glClear(GL_COLOR_BUFFER_BIT)
 
         glUniform4f(uColorLocation, 1.0f, 1.0f, 1.0f, 1.0f)
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 6);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 6) 
 
-        glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f);
-        glDrawArrays(GL_LINES, 6, 2);
+        glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f) 
+        glDrawArrays(GL_LINES, 6, 2) 
 
         // Draw the first mallet blue.
-        glUniform4f(uColorLocation, 0.0f, 0.0f, 1.0f, 1.0f);
-        glDrawArrays(GL_POINTS, 8, 1);
+        glUniform4f(uColorLocation, 0.0f, 0.0f, 1.0f, 1.0f) 
+        glDrawArrays(GL_POINTS, 8, 1) 
         // Draw the second mallet red.
-        glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f);
-        glDrawArrays(GL_POINTS, 9, 1);
+        glUniform4f(uColorLocation, 1.0f, 0.0f, 0.0f, 1.0f) 
+        glDrawArrays(GL_POINTS, 9, 1) 
 
     }
 
@@ -97,7 +105,7 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
 //        glClearColor(1.0f, 0.0f, 0.0f, 0.0f)
         val vertexShaderSource = TextResourceReader.readTextFileFromResource(context, R.raw.vertex_shader)
         val fragmentShaderSource = TextResourceReader.readTextFileFromResource(context, R.raw.fragment_shader)
@@ -112,17 +120,19 @@ class AirHockeyRenderer(baseContext: Context) : GLSurfaceView.Renderer {
         }
         glUseProgram(program)
 
-        uColorLocation = glGetUniformLocation(program, U_COLOR)
+        aColorLocation = glGetAttribLocation(program, A_COLOR)
+//        uColorLocation = glGetUniformLocation(program, U_COLOR)
         aPositionLocation = glGetAttribLocation(program, A_POSITION)
 
-        vertexData.position(0);
+        vertexData.position(0)
         glVertexAttribPointer(aPositionLocation, POSITION_COMPONENT_COUNT, GL_FLOAT,
-                false, 0, vertexData);
+                false, STRIDE, vertexData)
+        glEnableVertexAttribArray(aPositionLocation)
 
-        glEnableVertexAttribArray(aPositionLocation);
+        vertexData.position(POSITION_COMPONENT_COUNT)
+        glVertexAttribPointer(aColorLocation, COLOR_COMPONENT_COUNT, GL_FLOAT,
+                false, STRIDE, vertexData)
 
-
+        glEnableVertexAttribArray(aColorLocation)
     }
-
-
 }
